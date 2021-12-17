@@ -6,8 +6,12 @@
 */
 
 const express = require('express')
+const puppeteer = require('puppeteer');
 const app = express()
 const port = 3000
+
+/* Account Management */
+let AccountPool = [];
 
 app.post('/generate', (req, res) => {
   processRawRequest(req);
@@ -15,11 +19,11 @@ app.post('/generate', (req, res) => {
 
 app.listen(port, () => {
   console.log('Started ServiceClient... ');
+
+  this.loadAccounts();
 })
 
 let accountPool = [];
-
-//Functions we might need in the future.
 
 //Connects to redis
 function doRedisConnect(){
@@ -63,3 +67,27 @@ function requestRecieved(siteToken, requestID){
     notifyRedis(requestID, token);
 }
 
+function loadAccounts(){
+    AccountStorage.load();
+
+}
+
+function load(){
+  let json = require('./data.json');  
+
+  console.log("Length: "+json.length)
+  let x = 0;
+
+  for(x=0;x<json.length;x++){
+      var datea= { 
+          name: json[x]['User name'],
+          password: json[x]['Password'],
+          phone: json[x]['Phone no'],
+          recoveremail: json[x]['Recovery mail'],
+          needsActivity: false
+      };
+
+      console.log(datea);
+
+  }
+}
