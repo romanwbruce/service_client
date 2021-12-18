@@ -1,0 +1,12 @@
+{
+  "name": "service_client",
+  "version": "1.0.0",
+  "dependencies": {
+    "chrome-paths": "^1.0.1",
+    "express": "^4.17.2",
+    "puppeteer": "^13.0.0",
+    "puppeteer-extra": "^3.2.3",
+    "puppeteer-extra-plugin-stealth": "^2.9.0",
+    "request": "^2.88.2"
+  }
+}
