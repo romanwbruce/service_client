@@ -3,25 +3,69 @@
     1. Solve Challenge 
     2. Upload key to Redis
 
+
+
+    CaptchaInstance.js
+      Each instance of this class is a single window open
+
+      Functions
+        async solveCaptcha (siteKey)
+        async initialize ()
 */
 
-const express = require('express')
-const puppeteer = require('puppeteer');
+const express = require("express");
+const bodyParser = require('body-parser')
 const app = express()
 const port = 3000
 
-/* Account Management */
-let AccountPool = [];
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.post('/generate', (req, res) => {
-  processRawRequest(req);
-})
+const authenticatedAPIKeys = [
+    "3555399e00c44f48907fa459c3976631"
+]
+
+const CaptchaInstance = require("./CaptchaInstance.js");
+const instance = new CaptchaInstance(0, "6LeWwRkUAAAAAOBsau7KpuC9AV-6J8mhw4AjC3Xz", "http://www.supremenewyork.com/");
+instance.initialize();
+
+app.get("/generate", async (req, res) => {
+    console.log(req.query);
+    if(req.query && req.query.key && req.query.siteKey) {
+        const apiKey = req.query.key;
+        const captchaSiteKey = req.query.sitekey;
+        console.log(apiKey);
+        if(authenticatedAPIKeys.includes(apiKey)) {
+            // Generate a captcha
+            const response = await instance.generate();
+            res.send(JSON.stringify({ status: true, response }));
+            return;
+        }
+    }
+    res.send(JSON.stringify({ status: false }));
+});
 
 app.listen(port, () => {
   console.log('Started ServiceClient... ');
+  // this.loadAccounts();
+});
 
-  this.loadAccounts();
-})
+
+
+
+
+
+
+/* Account Management */
+let AccountPool = [];
+const puppeteer = require('puppeteer');
+
+
+
+
+
+
+
+
 
 let accountPool = [];
 
@@ -52,15 +96,6 @@ function notifyRedis(requestID, oneTimeClickToken){
 
 }
 
-//Recieve request from routing server.
-//We've already authorized that the user requesting has a valid API key so we don't need to check again. (Check on web server.)
-
-function processRawRequest(req){
-    console.log("Processing incoming request: "+req.body);
-
-    //Post body must contain:
-    // requestID, siteToken, maybe an auth token?
-}
 
 function requestRecieved(siteToken, requestID){
     let token = solveChallenge(siteToken, selectBestGoogleAccount());

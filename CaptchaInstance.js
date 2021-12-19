@@ -1,15 +1,18 @@
 
 class CaptchaInstance {
 
-	constructor() {
+	constructor(account, siteKey, url) {
 		this.puppeteer = require("puppeteer-extra");
 		this.puppeteer.use(require("puppeteer-extra-plugin-stealth")());
+		this.account = account;
+		this.siteKey = siteKey;
+		this.url = url;
 	}
 
 	async initialize() {
 		this.browser = await this.puppeteer.launch({
 			headless: false,
-			// userDataDir: `${__dirname}\\account-683b9c1e-0745-4f16-b16e-fda23fcff935`,
+			userDataDir: require("path").join(require("path").join(__dirname, "userDataDir"), this.account.toString()),
 			args: ['--disable-setuid-sandbox', '--no-sandbox', '--enable-features=NetworkService', '--ignore-certificate-errors', '--ignore-certificate-errors-spki-list', '--disable-session-crashed-bubble', '--disable-dev-shm-usage', '--window-size=512,512']
 		});
 
@@ -23,7 +26,7 @@ class CaptchaInstance {
 			// if(req.isNavigationRequest()) {
 			// 	console.log(req.url());
 			// }
-			if(req.isNavigationRequest() && req.url() === "https://www.supremenewyork.com/") {
+			if(req.isNavigationRequest() && req.url() === this.url) {
 				// console.log(req.url());
 				req.respond({
 					body: `<html>
@@ -100,8 +103,8 @@ class CaptchaInstance {
 			} else req.continue();
 			if(req.isNavigationRequest() && req.url().includes("solved.com")) {
 				const recaptchaResponse = req.url().split("=")[1];
-				console.log("g-recaptcha-response: " + recaptchaResponse);
-				this.browser.page.goto("http://www.supremenewyork.com/");
+				// console.log("g-recaptcha-response: " + recaptchaResponse);
+				this.resolve(recaptchaResponse);
 			}
 
 			// if(req.isNavigationRequest()) req.continue({headers: { "cookies": this.cookies }})
@@ -118,16 +121,11 @@ class CaptchaInstance {
 		});
 	}
 
-	async generate(domain, sitekey, profile) {
-		this.sitekey = sitekey;
-		// console.log("here");
-		// await this.setProfile(profile);
-		// for(let i = 0; i < this.profile.cookies.length; i++) await this.browser.page.setCookie(this.profile.cookies[i]);
-		// console.log("before went to domain");
-		await this.browser.page.goto(domain);
-		// console.log("went to domain");
-		// for(let i = 0; i < this.profile.cookies.length; i++) await this.browser.page.setCookie(this.profile.cookies[i]);
-		await new Promise((resolve) => setTimeout(() => { resolve(); }, 5000));
+	async generate() {
+		await this.browser.page.goto(this.url);
+		return new Promise(resolve => {
+			this.resolve = resolve;
+		});
 	}
 
 	async setProfile(profile) {
@@ -146,11 +144,13 @@ class CaptchaInstance {
 		// await this.browser.page.goto("https://gmail.com");
 	}
 }
+module.exports = CaptchaInstance;
 
-const profile = {"cookies":[{"name":"GMAIL_LOGIN","value":"T1595624177494/1595624177494/1595624186508","domain":".google.com","path":"/","expires":-1,"size":53,"httpOnly":false,"secure":false,"session":true},{"name":"SIDCC","value":"AJi4QfH7OiOgshVBhioi_jd-X1TFySIPecFlLjeXFzRIgQpXJrl_ubhX2XD9acwLesycxpDl5A","domain":".google.com","path":"/","expires":1627160188.026345,"size":79,"httpOnly":false,"secure":false,"session":false},{"name":"__Secure-3PAPISID","value":"YSlzLWlCYlqWlblo/ABh1025_tc5LZpQyC","domain":".google.com","path":"/","expires":1658696186.481928,"size":51,"httpOnly":false,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-APISID","value":"qOVypXLdkaM44HqU/A2GyHLEkywzoqjFI9","domain":".google.com","path":"/","expires":1596265199.481913,"size":49,"httpOnly":false,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-SSID","value":"AOpNj2j1ce8iv7gDk","domain":".google.com","path":"/","expires":1596265199.481899,"size":30,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SSID","value":"AOpNj2j1ce8iv7gDk","domain":".google.com","path":"/","expires":1658696186.481835,"size":21,"httpOnly":true,"secure":true,"session":false},{"name":"HSID","value":"AnXyaKr3aIXDcpDlS","domain":".google.com","path":"/","expires":1658696186.481818,"size":21,"httpOnly":true,"secure":false,"session":false},{"name":"__Secure-OSID","value":"zgfCk6Mznnk9bwiK5JCmX3FHVG76QDbNc8GV4qnfKeYLl2IuAOQJLeQTOp5lfVq52pF4iw.","domain":"mail.google.com","path":"/","expires":1658696186.64223,"size":84,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-3PSID","value":"zgfCkzMK9Y05gaFaORGIk9L9iyTGLHOxLo7_GJym5j-vldIqV5kqufxekjn0ImQ3YF3_Pw.","domain":".google.com","path":"/","expires":1658696186.481765,"size":85,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SID","value":"zgfCkzMK9Y05gaFaORGIk9L9iyTGLHOxLo7_GJym5j-vldIq6c1sOnvAhoBwaTtFn5b-Pg.","domain":".google.com","path":"/","expires":1658696186.481725,"size":74,"httpOnly":false,"secure":false,"session":false},{"name":"NID","value":"204=RmObJ8C8WtzCUq_j7Dn6PDvAXx4Uso6filJKJcS-SlPEl5rGrLtnLCSKlJenwTOOjfASa1IyINGMW-NbnUSzpaQP9IsN8Z-sEkKUhQyASqehv7YHiIedU_inZjXDEruTeG8kjL9_yoXVUnpzMDYa5PJvHR-SurFaj5a-bwTA_53fbx-HzJcz3yA","domain":".google.com","path":"/","expires":1611435386.481993,"size":190,"httpOnly":true,"secure":true,"session":false},{"name":"SDP_PROMO_SHOWN","value":"true","domain":"mail.google.com","path":"/mail/mu","expires":1598216188,"size":19,"httpOnly":false,"secure":false,"session":false},{"name":"WML","value":"1595624187724#frrancis.willits@gmail.com:54:0","domain":"mail.google.com","path":"/mail","expires":1658696188.026247,"size":48,"httpOnly":false,"secure":true,"session":false},{"name":"OSID","value":"zgfCk6Mznnk9bwiK5JCmX3FHVG76QDbNc8GV4qnfKeYLl2IudrcpLKJd7tu7ZtVSUkmYdQ.","domain":"mail.google.com","path":"/","expires":1658696186.642169,"size":75,"httpOnly":true,"secure":true,"session":false},{"name":"GX","value":"DUMMY","domain":".mail.google.com","path":"/mail","expires":1658696187.856312,"size":7,"httpOnly":true,"secure":true,"session":false},{"name":"COMPASS","value":"gmail=Co4BAAlriVfbb29np_SQUOWNWGMe_xiPlQv9PShCFO6agmj5HbY7xAD0mCVOEPXed4J-zBe1uL2ZquPTc2Scs3r8-uZzUaiK4FMKQf3UQP-fBmUS9PKnvCsng7nf1ireqsyUIfc8KtpgdLGma253zJxKR7P0MqUvzin8kPS4004da6D-VrIlEbNVpf0cmuRj2RCvsu34BRqgAQAJa4lXdR9frHmprpNMrxd42kiGrPXY6m-BSxJYP2j4YPph_gYEhcHsgNgTNnWpfq5ztz2G95PTrrpNBEyoH5vgxhOkxbSOeLLdNvKDVZmbkqU6QKlnW521mhVU-LXXJQqW0xl_WPpd7x0OCOVu1fLA8JreDJvAGueilDKtYyL6YlOaHqCqz0kwI4x1pTwGgN6zykOeRvX9YhC1Y4X5A5c","domain":"mail.google.com","path":"/mail","expires":1596488183.856127,"size":432,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SAPISID","value":"YSlzLWlCYlqWlblo/ABh1025_tc5LZpQyC","domain":".google.com","path":"/","expires":1658696186.481865,"size":41,"httpOnly":false,"secure":true,"session":false},{"name":"__Secure-HSID","value":"AnXyaKr3aIXDcpDlS","domain":".google.com","path":"/","expires":1596265199.481883,"size":30,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"APISID","value":"qOVypXLdkaM44HqU/A2GyHLEkywzoqjFI9","domain":".google.com","path":"/","expires":1658696186.48185,"size":40,"httpOnly":false,"secure":false,"session":false},{"name":"GAUSR","value":"frrancis.willits@gmail.com","domain":"mail.google.com","path":"/mail/mu","expires":1658696188.026309,"size":31,"httpOnly":false,"secure":true,"session":false}],"lastUpdated":1595624188763,"credentials":{"email":"frrancis.willits@gmail.com","password":"Fuck$Off$909","uuid":"683b9c1e-0745-4f16-b16e-fda23fcff935"}};
-
-(async () => {
-	const instance = new CaptchaInstance();
-	await instance.initialize();
-	await instance.generate("http://www.supremenewyork.com/", "6LeWwRkUAAAAAOBsau7KpuC9AV-6J8mhw4AjC3Xz", profile)
-})();
+// const profile = {"cookies":[{"name":"GMAIL_LOGIN","value":"T1595624177494/1595624177494/1595624186508","domain":".google.com","path":"/","expires":-1,"size":53,"httpOnly":false,"secure":false,"session":true},{"name":"SIDCC","value":"AJi4QfH7OiOgshVBhioi_jd-X1TFySIPecFlLjeXFzRIgQpXJrl_ubhX2XD9acwLesycxpDl5A","domain":".google.com","path":"/","expires":1627160188.026345,"size":79,"httpOnly":false,"secure":false,"session":false},{"name":"__Secure-3PAPISID","value":"YSlzLWlCYlqWlblo/ABh1025_tc5LZpQyC","domain":".google.com","path":"/","expires":1658696186.481928,"size":51,"httpOnly":false,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-APISID","value":"qOVypXLdkaM44HqU/A2GyHLEkywzoqjFI9","domain":".google.com","path":"/","expires":1596265199.481913,"size":49,"httpOnly":false,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-SSID","value":"AOpNj2j1ce8iv7gDk","domain":".google.com","path":"/","expires":1596265199.481899,"size":30,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SSID","value":"AOpNj2j1ce8iv7gDk","domain":".google.com","path":"/","expires":1658696186.481835,"size":21,"httpOnly":true,"secure":true,"session":false},{"name":"HSID","value":"AnXyaKr3aIXDcpDlS","domain":".google.com","path":"/","expires":1658696186.481818,"size":21,"httpOnly":true,"secure":false,"session":false},{"name":"__Secure-OSID","value":"zgfCk6Mznnk9bwiK5JCmX3FHVG76QDbNc8GV4qnfKeYLl2IuAOQJLeQTOp5lfVq52pF4iw.","domain":"mail.google.com","path":"/","expires":1658696186.64223,"size":84,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"__Secure-3PSID","value":"zgfCkzMK9Y05gaFaORGIk9L9iyTGLHOxLo7_GJym5j-vldIqV5kqufxekjn0ImQ3YF3_Pw.","domain":".google.com","path":"/","expires":1658696186.481765,"size":85,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SID","value":"zgfCkzMK9Y05gaFaORGIk9L9iyTGLHOxLo7_GJym5j-vldIq6c1sOnvAhoBwaTtFn5b-Pg.","domain":".google.com","path":"/","expires":1658696186.481725,"size":74,"httpOnly":false,"secure":false,"session":false},{"name":"NID","value":"204=RmObJ8C8WtzCUq_j7Dn6PDvAXx4Uso6filJKJcS-SlPEl5rGrLtnLCSKlJenwTOOjfASa1IyINGMW-NbnUSzpaQP9IsN8Z-sEkKUhQyASqehv7YHiIedU_inZjXDEruTeG8kjL9_yoXVUnpzMDYa5PJvHR-SurFaj5a-bwTA_53fbx-HzJcz3yA","domain":".google.com","path":"/","expires":1611435386.481993,"size":190,"httpOnly":true,"secure":true,"session":false},{"name":"SDP_PROMO_SHOWN","value":"true","domain":"mail.google.com","path":"/mail/mu","expires":1598216188,"size":19,"httpOnly":false,"secure":false,"session":false},{"name":"WML","value":"1595624187724#frrancis.willits@gmail.com:54:0","domain":"mail.google.com","path":"/mail","expires":1658696188.026247,"size":48,"httpOnly":false,"secure":true,"session":false},{"name":"OSID","value":"zgfCk6Mznnk9bwiK5JCmX3FHVG76QDbNc8GV4qnfKeYLl2IudrcpLKJd7tu7ZtVSUkmYdQ.","domain":"mail.google.com","path":"/","expires":1658696186.642169,"size":75,"httpOnly":true,"secure":true,"session":false},{"name":"GX","value":"DUMMY","domain":".mail.google.com","path":"/mail","expires":1658696187.856312,"size":7,"httpOnly":true,"secure":true,"session":false},{"name":"COMPASS","value":"gmail=Co4BAAlriVfbb29np_SQUOWNWGMe_xiPlQv9PShCFO6agmj5HbY7xAD0mCVOEPXed4J-zBe1uL2ZquPTc2Scs3r8-uZzUaiK4FMKQf3UQP-fBmUS9PKnvCsng7nf1ireqsyUIfc8KtpgdLGma253zJxKR7P0MqUvzin8kPS4004da6D-VrIlEbNVpf0cmuRj2RCvsu34BRqgAQAJa4lXdR9frHmprpNMrxd42kiGrPXY6m-BSxJYP2j4YPph_gYEhcHsgNgTNnWpfq5ztz2G95PTrrpNBEyoH5vgxhOkxbSOeLLdNvKDVZmbkqU6QKlnW521mhVU-LXXJQqW0xl_WPpd7x0OCOVu1fLA8JreDJvAGueilDKtYyL6YlOaHqCqz0kwI4x1pTwGgN6zykOeRvX9YhC1Y4X5A5c","domain":"mail.google.com","path":"/mail","expires":1596488183.856127,"size":432,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"SAPISID","value":"YSlzLWlCYlqWlblo/ABh1025_tc5LZpQyC","domain":".google.com","path":"/","expires":1658696186.481865,"size":41,"httpOnly":false,"secure":true,"session":false},{"name":"__Secure-HSID","value":"AnXyaKr3aIXDcpDlS","domain":".google.com","path":"/","expires":1596265199.481883,"size":30,"httpOnly":true,"secure":true,"session":false,"sameSite":"None"},{"name":"APISID","value":"qOVypXLdkaM44HqU/A2GyHLEkywzoqjFI9","domain":".google.com","path":"/","expires":1658696186.48185,"size":40,"httpOnly":false,"secure":false,"session":false},{"name":"GAUSR","value":"frrancis.willits@gmail.com","domain":"mail.google.com","path":"/mail/mu","expires":1658696188.026309,"size":31,"httpOnly":false,"secure":true,"session":false}],"lastUpdated":1595624188763,"credentials":{"email":"frrancis.willits@gmail.com","password":"Fuck$Off$909","uuid":"683b9c1e-0745-4f16-b16e-fda23fcff935"}};
+//
+// (async () => {
+// 	const instance = new CaptchaInstance(0, "6LeWwRkUAAAAAOBsau7KpuC9AV-6J8mhw4AjC3Xz", "http://www.supremenewyork.com/");
+// 	await instance.initialize();
+// 	const resp = await instance.generate();
+// 	console.log(resp);
+// })();
